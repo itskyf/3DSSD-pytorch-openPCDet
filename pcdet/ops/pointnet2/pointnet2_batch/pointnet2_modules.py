@@ -115,7 +115,7 @@ class PointnetSAModuleMSG_SSD(_PointnetSAModuleBase):
     """Pointnet set abstraction layer with multiscale grouping"""
 
     def __init__(self, *, npoint: int, radii: List[float], nsamples: List[int], mlps: List[List[int]], bn: bool = True,
-                 use_xyz: bool = True, pool_method='max_pool', out_channle=-1, fps_type='D-FPS', fps_range=-1,
+                 use_xyz: bool = True, pool_method='max_pool', out_channel=-1, fps_type='D-FPS', fps_range=-1,
                  dilated_group=False):
         """
         :param npoint: int
@@ -158,14 +158,14 @@ class PointnetSAModuleMSG_SSD(_PointnetSAModuleBase):
 
         self.pool_method = pool_method
 
-        if out_channle != -1 and len(self.mlps) > 0:
+        if out_channel != -1 and len(self.mlps) > 0:
             in_channel = 0
             for mlp_tmp in mlps:
                 in_channel += mlp_tmp[-1]
             shared_mlps = []
             shared_mlps.extend([
-                nn.Conv1d(in_channel, out_channle, kernel_size=1, bias=False),
-                nn.BatchNorm1d(out_channle),
+                nn.Conv1d(in_channel, out_channel, kernel_size=1, bias=False),
+                nn.BatchNorm1d(out_channel),
                 nn.ReLU()
             ])
             self.out_aggregation = nn.Sequential(*shared_mlps)
