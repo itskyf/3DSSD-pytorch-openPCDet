@@ -7,7 +7,6 @@ All Rights Reserved 2018.
 
 #include <torch/serialize/tensor.h>
 #include <vector>
-#include <THC/THC.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -15,10 +14,9 @@ All Rights Reserved 2018.
 #include <cuda_runtime_api.h>
 #include "interpolate_gpu.h"
 
-extern THCState *state;
 
 
-void three_nn_wrapper_fast(int b, int n, int m, at::Tensor unknown_tensor, 
+void three_nn_wrapper_fast(int b, int n, int m, at::Tensor unknown_tensor,
     at::Tensor known_tensor, at::Tensor dist2_tensor, at::Tensor idx_tensor) {
     const float *unknown = unknown_tensor.data<float>();
     const float *known = known_tensor.data<float>();

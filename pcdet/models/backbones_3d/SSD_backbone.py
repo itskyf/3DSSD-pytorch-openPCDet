@@ -2,8 +2,6 @@ import torch
 import torch.nn as nn
 
 from ...ops.pointnet2.pointnet2_batch import pointnet2_modules
-from ...ops.pointnet2.pointnet2_stack import pointnet2_modules as pointnet2_modules_stack
-from ...ops.pointnet2.pointnet2_stack import pointnet2_utils as pointnet2_utils_stack
 
 
 class SSDBackbone(nn.Module):
@@ -56,7 +54,7 @@ class SSDBackbone(nn.Module):
 
         skip_channel_list = [1, 64, 128, 256, 512]
         channel_out = 512
-        
+
         self.num_point_features = self.model_cfg.FP_MLPS[0][-1]
 
 
@@ -105,7 +103,7 @@ class SSDBackbone(nn.Module):
                 centers_origin = xyz_input
             encoder_xyz.append(li_xyz)
             encoder_features.append(li_features)
-            
+
         ctr_batch_idx = batch_idx.view(batch_size, -1)[:, :ctr_offsets.shape[1]]
         ctr_batch_idx = ctr_batch_idx.contiguous().view(-1)
         batch_dict['ctr_offsets'] = torch.cat((ctr_batch_idx[:, None].float(), ctr_offsets.contiguous().view(-1, 3)), dim=1)

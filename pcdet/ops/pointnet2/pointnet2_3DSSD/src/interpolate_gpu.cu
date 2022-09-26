@@ -6,14 +6,14 @@
 #include "interpolate_gpu.h"
 
 
-__global__ void three_nn_kernel_fast(int b, int n, int m, const float *__restrict__ unknown, 
+__global__ void three_nn_kernel_fast(int b, int n, int m, const float *__restrict__ unknown,
     const float *__restrict__ known, float *__restrict__ dist2, int *__restrict__ idx) {
     // unknown: (B, N, 3)
     // known: (B, M, 3)
-    // output: 
+    // output:
     //      dist2: (B, N, 3)
     //      idx: (B, N, 3)
-    
+
     int bs_idx = blockIdx.y;
     int pt_idx = blockIdx.x * blockDim.x + threadIdx.x;
     if (bs_idx >= b || pt_idx >= n) return;
@@ -38,11 +38,11 @@ __global__ void three_nn_kernel_fast(int b, int n, int m, const float *__restric
             best3 = best2; besti3 = besti2;
             best2 = best1; besti2 = besti1;
             best1 = d; besti1 = k;
-        } 
+        }
         else if (d < best2) {
             best3 = best2; besti3 = besti2;
             best2 = d; besti2 = k;
-        } 
+        }
         else if (d < best3) {
             best3 = d; besti3 = k;
         }
@@ -52,11 +52,11 @@ __global__ void three_nn_kernel_fast(int b, int n, int m, const float *__restric
 }
 
 
-void three_nn_kernel_launcher_fast(int b, int n, int m, const float *unknown, 
-    const float *known, float *dist2, int *idx, cudaStream_t stream) {
+void three_nn_kernel_launcher_fast(int b, int n, int m, const float *unknown,
+    const float *known, float *dist2, int *idx) {
     // unknown: (B, N, 3)
     // known: (B, M, 3)
-    // output: 
+    // output:
     //      dist2: (B, N, 3)
     //      idx: (B, N, 3)
 
@@ -64,7 +64,7 @@ void three_nn_kernel_launcher_fast(int b, int n, int m, const float *unknown,
     dim3 blocks(DIVUP(n, THREADS_PER_BLOCK), b);  // blockIdx.x(col), blockIdx.y(row)
     dim3 threads(THREADS_PER_BLOCK);
 
-    three_nn_kernel_fast<<<blocks, threads, 0, stream>>>(b, n, m, unknown, known, dist2, idx);
+    three_nn_kernel_fast<<<blocks, threads>>>(b, n, m, unknown, known, dist2, idx);
 
     err = cudaGetLastError();
     if (cudaSuccess != err) {
@@ -74,7 +74,7 @@ void three_nn_kernel_launcher_fast(int b, int n, int m, const float *unknown,
 }
 
 
-__global__ void three_interpolate_kernel_fast(int b, int c, int m, int n, const float *__restrict__ points, 
+__global__ void three_interpolate_kernel_fast(int b, int c, int m, int n, const float *__restrict__ points,
     const int *__restrict__ idx, const float *__restrict__ weight, float *__restrict__ out) {
     // points: (B, C, M)
     // idx: (B, N, 3)
@@ -96,8 +96,8 @@ __global__ void three_interpolate_kernel_fast(int b, int c, int m, int n, const 
     out[pt_idx] = weight[0] * points[idx[0]] + weight[1] * points[idx[1]] + weight[2] * points[idx[2]];
 }
 
-void three_interpolate_kernel_launcher_fast(int b, int c, int m, int n, 
-    const float *points, const int *idx, const float *weight, float *out, cudaStream_t stream) {
+void three_interpolate_kernel_launcher_fast(int b, int c, int m, int n,
+    const float *points, const int *idx, const float *weight, float *out) {
     // points: (B, C, M)
     // idx: (B, N, 3)
     // weight: (B, N, 3)
@@ -107,7 +107,7 @@ void three_interpolate_kernel_launcher_fast(int b, int c, int m, int n,
     cudaError_t err;
     dim3 blocks(DIVUP(n, THREADS_PER_BLOCK), c, b);  // blockIdx.x(col), blockIdx.y(row)
     dim3 threads(THREADS_PER_BLOCK);
-    three_interpolate_kernel_fast<<<blocks, threads, 0, stream>>>(b, c, m, n, points, idx, weight, out);
+    three_interpolate_kernel_fast<<<blocks, threads>>>(b, c, m, n, points, idx, weight, out);
 
     err = cudaGetLastError();
     if (cudaSuccess != err) {
@@ -117,7 +117,7 @@ void three_interpolate_kernel_launcher_fast(int b, int c, int m, int n,
 }
 
 
-__global__ void three_interpolate_grad_kernel_fast(int b, int c, int n, int m, const float *__restrict__ grad_out, 
+__global__ void three_interpolate_grad_kernel_fast(int b, int c, int n, int m, const float *__restrict__ grad_out,
     const int *__restrict__ idx, const float *__restrict__ weight, float *__restrict__ grad_points) {
     // grad_out: (B, C, N)
     // weight: (B, N, 3)
@@ -129,7 +129,7 @@ __global__ void three_interpolate_grad_kernel_fast(int b, int c, int n, int m, c
     int pt_idx = blockIdx.x * blockDim.x + threadIdx.x;
 
     if (bs_idx >= b || c_idx >= c || pt_idx >= n) return;
-    
+
     grad_out += bs_idx * c * n + c_idx * n + pt_idx;
     weight += bs_idx * n * 3 + pt_idx * 3;
     grad_points += bs_idx * c * m + c_idx * m;
@@ -141,8 +141,8 @@ __global__ void three_interpolate_grad_kernel_fast(int b, int c, int n, int m, c
     atomicAdd(grad_points + idx[2], grad_out[0] * weight[2]);
 }
 
-void three_interpolate_grad_kernel_launcher_fast(int b, int c, int n, int m, const float *grad_out, 
-    const int *idx, const float *weight, float *grad_points, cudaStream_t stream) {
+void three_interpolate_grad_kernel_launcher_fast(int b, int c, int n, int m, const float *grad_out,
+    const int *idx, const float *weight, float *grad_points) {
     // grad_out: (B, C, N)
     // weight: (B, N, 3)
     // output:
@@ -151,7 +151,7 @@ void three_interpolate_grad_kernel_launcher_fast(int b, int c, int n, int m, con
     cudaError_t err;
     dim3 blocks(DIVUP(n, THREADS_PER_BLOCK), c, b);  // blockIdx.x(col), blockIdx.y(row)
     dim3 threads(THREADS_PER_BLOCK);
-    three_interpolate_grad_kernel_fast<<<blocks, threads, 0, stream>>>(b, c, n, m, grad_out, idx, weight, grad_points);
+    three_interpolate_grad_kernel_fast<<<blocks, threads>>>(b, c, n, m, grad_out, idx, weight, grad_points);
 
     err = cudaGetLastError();
     if (cudaSuccess != err) {

@@ -5,7 +5,7 @@
 #include "sampling_gpu.h"
 
 
-__global__ void gather_points_kernel_fast(int b, int c, int n, int m, 
+__global__ void gather_points_kernel_fast(int b, int c, int n, int m,
     const float *__restrict__ points, const int *__restrict__ idx, float *__restrict__ out) {
     // points: (B, C, N)
     // idx: (B, M)
@@ -23,8 +23,8 @@ __global__ void gather_points_kernel_fast(int b, int c, int n, int m,
     out[0] = points[idx[0]];
 }
 
-void gather_points_kernel_launcher_fast(int b, int c, int n, int npoints, 
-    const float *points, const int *idx, float *out, cudaStream_t stream) {
+void gather_points_kernel_launcher_fast(int b, int c, int n, int npoints,
+    const float *points, const int *idx, float *out) {
     // points: (B, C, N)
     // idx: (B, npoints)
     // output:
@@ -34,7 +34,7 @@ void gather_points_kernel_launcher_fast(int b, int c, int n, int npoints,
     dim3 blocks(DIVUP(npoints, THREADS_PER_BLOCK), c, b);  // blockIdx.x(col), blockIdx.y(row)
     dim3 threads(THREADS_PER_BLOCK);
 
-    gather_points_kernel_fast<<<blocks, threads, 0, stream>>>(b, c, n, npoints, points, idx, out);
+    gather_points_kernel_fast<<<blocks, threads>>>(b, c, n, npoints, points, idx, out);
 
     err = cudaGetLastError();
     if (cudaSuccess != err) {
@@ -43,7 +43,7 @@ void gather_points_kernel_launcher_fast(int b, int c, int n, int npoints,
     }
 }
 
-__global__ void gather_points_grad_kernel_fast(int b, int c, int n, int m, const float *__restrict__ grad_out, 
+__global__ void gather_points_grad_kernel_fast(int b, int c, int n, int m, const float *__restrict__ grad_out,
     const int *__restrict__ idx, float *__restrict__ grad_points) {
     // grad_out: (B, C, M)
     // idx: (B, M)
@@ -62,8 +62,8 @@ __global__ void gather_points_grad_kernel_fast(int b, int c, int n, int m, const
     atomicAdd(grad_points + idx[0], grad_out[0]);
 }
 
-void gather_points_grad_kernel_launcher_fast(int b, int c, int n, int npoints, 
-    const float *grad_out, const int *idx, float *grad_points, cudaStream_t stream) {
+void gather_points_grad_kernel_launcher_fast(int b, int c, int n, int npoints,
+    const float *grad_out, const int *idx, float *grad_points) {
     // grad_out: (B, C, npoints)
     // idx: (B, npoints)
     // output:
@@ -73,7 +73,7 @@ void gather_points_grad_kernel_launcher_fast(int b, int c, int n, int npoints,
     dim3 blocks(DIVUP(npoints, THREADS_PER_BLOCK), c, b);  // blockIdx.x(col), blockIdx.y(row)
     dim3 threads(THREADS_PER_BLOCK);
 
-    gather_points_grad_kernel_fast<<<blocks, threads, 0, stream>>>(b, c, n, npoints, grad_out, idx, grad_points);
+    gather_points_grad_kernel_fast<<<blocks, threads>>>(b, c, n, npoints, grad_out, idx, grad_points);
 
     err = cudaGetLastError();
     if (cudaSuccess != err) {
@@ -91,7 +91,7 @@ __device__ void __update(float *__restrict__ dists, int *__restrict__ dists_i, i
 }
 
 template <unsigned int block_size>
-__global__ void furthest_point_sampling_kernel(int b, int n, int m, 
+__global__ void furthest_point_sampling_kernel(int b, int n, int m,
     const float *__restrict__ dataset, float *__restrict__ temp, int *__restrict__ idxs) {
     // dataset: (B, N, 3)
     // tmp: (B, N)
@@ -208,8 +208,8 @@ __global__ void furthest_point_sampling_kernel(int b, int n, int m,
     }
 }
 
-void furthest_point_sampling_kernel_launcher(int b, int n, int m, 
-    const float *dataset, float *temp, int *idxs, cudaStream_t stream) {
+void furthest_point_sampling_kernel_launcher(int b, int n, int m,
+    const float *dataset, float *temp, int *idxs) {
     // dataset: (B, N, 3)
     // tmp: (B, N)
     // output:
@@ -220,29 +220,29 @@ void furthest_point_sampling_kernel_launcher(int b, int n, int m,
 
     switch (n_threads) {
         case 1024:
-        furthest_point_sampling_kernel<1024><<<b, n_threads, 0, stream>>>(b, n, m, dataset, temp, idxs); break;
+        furthest_point_sampling_kernel<1024><<<b, n_threads>>>(b, n, m, dataset, temp, idxs); break;
         case 512:
-        furthest_point_sampling_kernel<512><<<b, n_threads, 0, stream>>>(b, n, m, dataset, temp, idxs); break;
+        furthest_point_sampling_kernel<512><<<b, n_threads>>>(b, n, m, dataset, temp, idxs); break;
         case 256:
-        furthest_point_sampling_kernel<256><<<b, n_threads, 0, stream>>>(b, n, m, dataset, temp, idxs); break;
+        furthest_point_sampling_kernel<256><<<b, n_threads>>>(b, n, m, dataset, temp, idxs); break;
         case 128:
-        furthest_point_sampling_kernel<128><<<b, n_threads, 0, stream>>>(b, n, m, dataset, temp, idxs); break;
+        furthest_point_sampling_kernel<128><<<b, n_threads>>>(b, n, m, dataset, temp, idxs); break;
         case 64:
-        furthest_point_sampling_kernel<64><<<b, n_threads, 0, stream>>>(b, n, m, dataset, temp, idxs); break;
+        furthest_point_sampling_kernel<64><<<b, n_threads>>>(b, n, m, dataset, temp, idxs); break;
         case 32:
-        furthest_point_sampling_kernel<32><<<b, n_threads, 0, stream>>>(b, n, m, dataset, temp, idxs); break;
+        furthest_point_sampling_kernel<32><<<b, n_threads>>>(b, n, m, dataset, temp, idxs); break;
         case 16:
-        furthest_point_sampling_kernel<16><<<b, n_threads, 0, stream>>>(b, n, m, dataset, temp, idxs); break;
+        furthest_point_sampling_kernel<16><<<b, n_threads>>>(b, n, m, dataset, temp, idxs); break;
         case 8:
-        furthest_point_sampling_kernel<8><<<b, n_threads, 0, stream>>>(b, n, m, dataset, temp, idxs); break;
+        furthest_point_sampling_kernel<8><<<b, n_threads>>>(b, n, m, dataset, temp, idxs); break;
         case 4:
-        furthest_point_sampling_kernel<4><<<b, n_threads, 0, stream>>>(b, n, m, dataset, temp, idxs); break;
+        furthest_point_sampling_kernel<4><<<b, n_threads>>>(b, n, m, dataset, temp, idxs); break;
         case 2:
-        furthest_point_sampling_kernel<2><<<b, n_threads, 0, stream>>>(b, n, m, dataset, temp, idxs); break;
+        furthest_point_sampling_kernel<2><<<b, n_threads>>>(b, n, m, dataset, temp, idxs); break;
         case 1:
-        furthest_point_sampling_kernel<1><<<b, n_threads, 0, stream>>>(b, n, m, dataset, temp, idxs); break;
+        furthest_point_sampling_kernel<1><<<b, n_threads>>>(b, n, m, dataset, temp, idxs); break;
         default:
-        furthest_point_sampling_kernel<512><<<b, n_threads, 0, stream>>>(b, n, m, dataset, temp, idxs);
+        furthest_point_sampling_kernel<512><<<b, n_threads>>>(b, n, m, dataset, temp, idxs);
     }
 
     err = cudaGetLastError();
@@ -254,7 +254,7 @@ void furthest_point_sampling_kernel_launcher(int b, int n, int m,
 
 
 template <unsigned int block_size>
-__global__ void furthest_point_sampling_with_dist_kernel(int b, int n, int m, 
+__global__ void furthest_point_sampling_with_dist_kernel(int b, int n, int m,
     const float *__restrict__ dataset, float *__restrict__ temp, int *__restrict__ idxs) {
     // dataset: (B, N, N)
     // tmp: (B, N)
@@ -289,10 +289,10 @@ __global__ void furthest_point_sampling_with_dist_kernel(int b, int n, int m,
         // x2 = dataset[k * 3 + 0];
         // y2 = dataset[k * 3 + 1];
         // z2 = dataset[k * 3 + 2];
-        
+
         // float d = (x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1) + (z2 - z1) * (z2 - z1);
         float d = dataset[old * n + k];
-        
+
         float d2 = min(d, temp[k]);
         temp[k] = d2;
         besti = d2 > best ? k : besti;
@@ -371,8 +371,8 @@ __global__ void furthest_point_sampling_with_dist_kernel(int b, int n, int m,
 }
 
 
-void furthest_point_sampling_with_dist_kernel_launcher(int b, int n, int m, 
-    const float *dataset, float *temp, int *idxs, cudaStream_t stream) {
+void furthest_point_sampling_with_dist_kernel_launcher(int b, int n, int m,
+    const float *dataset, float *temp, int *idxs) {
     // dataset: (B, N, N)
     // tmp: (B, N)
     // output:
@@ -383,29 +383,29 @@ void furthest_point_sampling_with_dist_kernel_launcher(int b, int n, int m,
 
     switch (n_threads) {
         case 1024:
-        furthest_point_sampling_with_dist_kernel<1024><<<b, n_threads, 0, stream>>>(b, n, m, dataset, temp, idxs); break;
+        furthest_point_sampling_with_dist_kernel<1024><<<b, n_threads>>>(b, n, m, dataset, temp, idxs); break;
         case 512:
-        furthest_point_sampling_with_dist_kernel<512><<<b, n_threads, 0, stream>>>(b, n, m, dataset, temp, idxs); break;
+        furthest_point_sampling_with_dist_kernel<512><<<b, n_threads>>>(b, n, m, dataset, temp, idxs); break;
         case 256:
-        furthest_point_sampling_with_dist_kernel<256><<<b, n_threads, 0, stream>>>(b, n, m, dataset, temp, idxs); break;
+        furthest_point_sampling_with_dist_kernel<256><<<b, n_threads>>>(b, n, m, dataset, temp, idxs); break;
         case 128:
-        furthest_point_sampling_with_dist_kernel<128><<<b, n_threads, 0, stream>>>(b, n, m, dataset, temp, idxs); break;
+        furthest_point_sampling_with_dist_kernel<128><<<b, n_threads>>>(b, n, m, dataset, temp, idxs); break;
         case 64:
-        furthest_point_sampling_with_dist_kernel<64><<<b, n_threads, 0, stream>>>(b, n, m, dataset, temp, idxs); break;
+        furthest_point_sampling_with_dist_kernel<64><<<b, n_threads>>>(b, n, m, dataset, temp, idxs); break;
         case 32:
-        furthest_point_sampling_with_dist_kernel<32><<<b, n_threads, 0, stream>>>(b, n, m, dataset, temp, idxs); break;
+        furthest_point_sampling_with_dist_kernel<32><<<b, n_threads>>>(b, n, m, dataset, temp, idxs); break;
         case 16:
-        furthest_point_sampling_with_dist_kernel<16><<<b, n_threads, 0, stream>>>(b, n, m, dataset, temp, idxs); break;
+        furthest_point_sampling_with_dist_kernel<16><<<b, n_threads>>>(b, n, m, dataset, temp, idxs); break;
         case 8:
-        furthest_point_sampling_with_dist_kernel<8><<<b, n_threads, 0, stream>>>(b, n, m, dataset, temp, idxs); break;
+        furthest_point_sampling_with_dist_kernel<8><<<b, n_threads>>>(b, n, m, dataset, temp, idxs); break;
         case 4:
-        furthest_point_sampling_with_dist_kernel<4><<<b, n_threads, 0, stream>>>(b, n, m, dataset, temp, idxs); break;
+        furthest_point_sampling_with_dist_kernel<4><<<b, n_threads>>>(b, n, m, dataset, temp, idxs); break;
         case 2:
-        furthest_point_sampling_with_dist_kernel<2><<<b, n_threads, 0, stream>>>(b, n, m, dataset, temp, idxs); break;
+        furthest_point_sampling_with_dist_kernel<2><<<b, n_threads>>>(b, n, m, dataset, temp, idxs); break;
         case 1:
-        furthest_point_sampling_with_dist_kernel<1><<<b, n_threads, 0, stream>>>(b, n, m, dataset, temp, idxs); break;
+        furthest_point_sampling_with_dist_kernel<1><<<b, n_threads>>>(b, n, m, dataset, temp, idxs); break;
         default:
-        furthest_point_sampling_with_dist_kernel<512><<<b, n_threads, 0, stream>>>(b, n, m, dataset, temp, idxs);
+        furthest_point_sampling_with_dist_kernel<512><<<b, n_threads>>>(b, n, m, dataset, temp, idxs);
     }
 
     err = cudaGetLastError();

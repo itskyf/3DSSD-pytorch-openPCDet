@@ -8,14 +8,12 @@ All Rights Reserved 2018.
 #include <torch/serialize/tensor.h>
 #include <ATen/cuda/CUDAContext.h>
 #include <vector>
-#include <THC/THC.h>
 
 #include "sampling_gpu.h"
 
-extern THCState *state;
 
 
-int gather_points_wrapper_fast(int b, int c, int n, int npoints, 
+int gather_points_wrapper_fast(int b, int c, int n, int npoints,
     at::Tensor points_tensor, at::Tensor idx_tensor, at::Tensor out_tensor){
     const float *points = points_tensor.data<float>();
     const int *idx = idx_tensor.data<int>();
@@ -26,7 +24,7 @@ int gather_points_wrapper_fast(int b, int c, int n, int npoints,
 }
 
 
-int gather_points_grad_wrapper_fast(int b, int c, int n, int npoints, 
+int gather_points_grad_wrapper_fast(int b, int c, int n, int npoints,
     at::Tensor grad_out_tensor, at::Tensor idx_tensor, at::Tensor grad_points_tensor) {
 
     const float *grad_out = grad_out_tensor.data<float>();
@@ -38,7 +36,7 @@ int gather_points_grad_wrapper_fast(int b, int c, int n, int npoints,
 }
 
 
-int furthest_point_sampling_wrapper(int b, int n, int m, 
+int furthest_point_sampling_wrapper(int b, int n, int m,
     at::Tensor points_tensor, at::Tensor temp_tensor, at::Tensor idx_tensor) {
 
     const float *points = points_tensor.data<float>();
