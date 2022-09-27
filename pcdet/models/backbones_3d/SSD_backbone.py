@@ -38,7 +38,7 @@ class SSDBackbone(nn.Module):
                         nsamples=self.model_cfg.SA_CONFIG.NSAMPLE[k],
                         mlps=mlps,
                         use_xyz=True,
-                        out_channle=self.model_cfg.SA_CONFIG.AGGREATION_CHANNEL[k],
+                        out_channel=self.model_cfg.SA_CONFIG.AGGREATION_CHANNEL[k],
                         fps_type=self.model_cfg.SA_CONFIG.FPS_TYPE[k],
                         fps_range=self.model_cfg.SA_CONFIG.FPS_RANGE[k],
                         dilated_group=False,
