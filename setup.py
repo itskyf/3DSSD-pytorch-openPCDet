@@ -76,6 +76,14 @@ if __name__ == '__main__':
                 ],
             ),
             make_cuda_ext(
+                name='roiaware_pool3d_cuda',
+                module='pcdet.ops.roiaware_pool3d',
+                sources=[
+                    'src/roiaware_pool3d.cpp',
+                    'src/roiaware_pool3d_kernel.cu',
+                ]
+            ),
+            make_cuda_ext(
                 name='roipoint_pool3d_cuda',
                 module='pcdet.ops.roipoint_pool3d',
                 sources=[
